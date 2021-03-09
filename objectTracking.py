@@ -1,10 +1,12 @@
-#! /usr/bin/python2
+#! /usr/bin/python3
 
 import numpy as np
 import cv2
 from picamera import PiCamera
 from picamera.array import PiRGBArray
 import time
+import sys
+from avoidObstacle import turnLeft, turnRight, stopMotors
 
 #Configure the picamera
 camera = PiCamera()
@@ -40,7 +42,7 @@ def show_hist(hist):
   bin_count = hist.shape[0]
   bin_w = 24
   img = np.zeros((256, bin_count * bin_w, 3), np.uint8)
-  for i in xrange(bin_count):
+  for i in range(bin_count):
     h = int(hist[i])
     cv2.rectangle(img, (i*bin_w+2, 255), ((i+1)*bin_w-2, 255-h), (int(180.0*i/bin_count), 255, 255), -1)
   img = cv2.cvtColor(img, cv2.COLOR_HSV2BGR)
@@ -86,7 +88,31 @@ for frame in camera.capture_continuous(rawCapture, format='bgr', use_video_port=
     except:
       print(track_box)
   
+    pts = cv2.boxPoints(track_box)
+    mp = np.mean(pts, axis=0)
+    center = tuple(mp)
+
+    ctrl_img = cv2.line(vis, center, (160, 120), (255, 0, 0), 2)
+
+    if center[0] < 160:
+      # turnLeft()
+      print('turning left')
+    elif center[0] > 160:
+      # turnRight()
+      print('turning right')
+    else:
+      # stopMotors()
+      print('Stopping')
+
+  #Drawing horizontal and verticle line passing through center of object
   cv2.imshow('camshift', vis)
+
+  ctrl_img = cv2.line(vis, (0, 120), (320, 120), (255, 0, 0), 2)
+  ctrl_img = cv2.line(vis, (160, 240), (160, 0), (255, 0, 0), 2)
+
+  cv2.imshow('control', ctrl_img)
+
+
   ch = cv2.waitKey(5)
 
   #Refresh buffer
