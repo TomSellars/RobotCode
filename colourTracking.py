@@ -10,10 +10,10 @@ from avoidObstacle import turnLeft, turnRight, stopMotors
 
 #Configure the picamera
 camera = PiCamera()
-camera.resolution = (640,480)
+camera.resolution = (320,240)
 camera.rotation = 180
 camera.framerate = 32
-rawCapture = PiRGBArray(camera, size=(640,480))
+rawCapture = PiRGBArray(camera, size=(320,240))
 
 #time for camera to stabilize
 time.sleep(1)
@@ -23,6 +23,7 @@ track_window = None
 show_backproj = False
 drag_start = None
 
+#Mouse event for selecting the colour
 def onmouse(event, x, y, flags, param):
     global selection, track_window, drag_start
     if event == cv2.EVENT_LBUTTONDOWN:
@@ -37,16 +38,6 @@ def onmouse(event, x, y, flags, param):
     if event == cv2.EVENT_LBUTTONUP:
       drag_start = None
       track_window = (xmin, ymin, xmax - xmin, ymax - ymin)
-
-def show_hist(hist):
-  bin_count = hist.shape[0]
-  bin_w = 24
-  img = np.zeros((256, bin_count * bin_w, 3), np.uint8)
-  for i in range(bin_count):
-    h = int(hist[i])
-    cv2.rectangle(img, (i*bin_w+2, 255), ((i+1)*bin_w-2, 255-h), (int(180.0*i/bin_count), 255, 255), -1)
-  img = cv2.cvtColor(img, cv2.COLOR_HSV2BGR)
-  cv2.imshow('hist', img)
 
 #Create window to capture mouse events
 cv2.namedWindow('camshift')
@@ -69,7 +60,6 @@ for frame in camera.capture_continuous(rawCapture, format='bgr', use_video_port=
     hist = cv2.calcHist([hsv_roi], [0], mask_roi, [16], [0,180])
     cv2.normalize(hist, hist, 0, 255, cv2.NORM_MINMAX)
     hist = hist.reshape(-1)
-    show_hist(hist)
     vis_roi = vis[y0:y1, x0:x1]
     cv2.bitwise_not(vis_roi,vis_roi)
     vis[mask==0] = 0
