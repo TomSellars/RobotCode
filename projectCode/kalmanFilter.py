@@ -1,11 +1,10 @@
 #! /usr/bin/python3
-
 import numpy as np
 import cv2
 import time
 import math
 import io
-from motorControl import turnLeft, turnRight, stopMotors
+from GPIOControl import turnLeft, turnRight, stopMotors, motorBackward, motorForward
 from picamera import PiCamera
 from picamera.array import PiRGBArray
 
@@ -23,12 +22,17 @@ time.sleep(1)
 selectionBox = []
 currentMousePosition = np.ones(2, dtype=np.int32)
 userSelecting = False
-startTime = 0
 
+#Timer variables for the decision making algorithm
+OOBTime = 0
+settleStart = 0
+
+#Event for selecting the area that will be tracked
 def onMouse(event, x, y, flags, params):
     global selectionBox
     global userSelecting
-    global startTime
+    global OOBTime
+    global settleStart
 
     currentMousePosition[0] = x
     currentMousePosition[1] = y
@@ -42,7 +46,8 @@ def onMouse(event, x, y, flags, params):
         box = [x,y]
         userSelecting = False
         selectionBox.append(box)
-        startTime = round(time.time())
+        OOBTime = round(time.time())
+        settleStart = round(time.time())
 
 #Function for returning the center points of a rectangle
 def center(points):
@@ -61,14 +66,8 @@ kalman.processNoiseCov = np.array([[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]], 
 measurement = np.array((2,1), np.float32)
 prediction = np.array((2,1), np.float32)
 
-#Creating windows by name
+#Creating windows by name and adding the window event
 cv2.namedWindow("Kalman Object Tracking", cv2.WINDOW_NORMAL)
-
-#Creating sliders for HSV selection thresholding
-def nothing(x):
-    pass
-
-#Creating a mouse callback
 cv2.setMouseCallback("Kalman Object Tracking", onMouse, 0)
 cropped = False
 
@@ -152,37 +151,52 @@ for frame in camera.capture_continuous(rawCapture, format='bgr', use_video_port=
       #Draw a line the center of the kalman filter prediction box 
       image = cv2.line(image, (prediction[0], prediction[1]), (160, 120), (255,0,0), 2)
 
-      if (frameCount is 3):
-        if (directionRight > directionLeft):
-          turnRight()
-        elif (directionLeft > directionRight):
-          turnLeft()
-        else:
+      if(2 + settleStart < round(time.time()) ):
+
+        if (frameCount is 3):
+
           stopMotors()
-        frameCount = 0
-        directionLeft = 0
-        directionRight = 0
-      else:
-        #Uses prediction so its anticipatory
-        if(prediction[0] < 140 and prediction[0] > 20):
-          directionLeft += 1
-          frameCount += 1
-        elif(prediction[0] > 180 and prediction[0] < 300):
-          directionRight += 1
-          frameCount += 1
-        else:
-          if((5 + startTime) < round(time.time()) and prediction[0] > 300):
-            print('Out Of Bounds, turning Right to catch up')
+
+          if(observW < 40):
+            motorForward()
+          elif(observW > 60):
+            motorBackward()
+          elif (directionRight > directionLeft):
             turnRight()
-            time.sleep(0.75)
-            stopMotors()
-            startTime = round(time.time())
-          elif((5 + startTime) < round(time.time()) and prediction[0] < 20):
-            print('Out Of Bounds, turning left to catch up')
+          elif (directionLeft > directionRight):
             turnLeft()
-            time.sleep(0.75)
+          else:
             stopMotors()
-            startTime = round(time.time())
+
+
+          frameCount = 0
+          directionLeft = 0
+          directionRight = 0
+
+        else:
+          #Uses prediction so its anticipatory
+          if(prediction[0] < 130 and prediction[0] > 20):
+            directionLeft += 1
+          elif(prediction[0] > 190 and prediction[0] < 300):
+            directionRight += 1
+          else:
+            if((5 + OOBTime) < round(time.time()) and prediction[0] > 300):
+              print('Out Of Bounds, turning Right to catch up')
+              turnRight()
+              time.sleep(0.75)
+              stopMotors()
+              OOBTime = round(time.time())
+              settleStart = round(time.time())
+            elif((5 + OOBTime) < round(time.time()) and prediction[0] < 20):
+              print('Out Of Bounds, turning left to catch up')
+              turnLeft()
+              time.sleep(0.75)
+              stopMotors()
+              OOBTime = round(time.time())
+              settleStart = round(time.time())
+          frameCount += 1
+      else:
+        print("still settle")
 
     #Display image
     cv2.imshow("Kalman Object Tracking", image)

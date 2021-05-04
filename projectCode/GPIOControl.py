@@ -1,5 +1,4 @@
 #! usr/bin/python3
-
 import RPi.GPIO as GPIO
 
 #Setting up GPIO
@@ -7,15 +6,15 @@ GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
 
 # Set variables for GPIO motor pins
-pinMotorAForward = 10
-pinMotorABackward = 9
-pinMotorBForward = 8
-pinMotorBBackward = 7
+pinMotorAForward = 9
+pinMotorABackward = 10
+pinMotorBForward = 7
+pinMotorBBackward = 8
 
 # PWN parameters
 frequency = 30
-DutyCycleA = 30
-DutyCycleB = 30
+DutyCycleA = 25
+DutyCycleB = 25
 Stop = 0
 
 # set the GPIO pin mode
@@ -36,6 +35,8 @@ pwmMotorABackward.start(Stop)
 pwmMotorBForward.start(Stop)
 pwmMotorBBackward.start(Stop)
 
+
+
 def stopMotors():
     pwmMotorAForward.ChangeDutyCycle(Stop)
     pwmMotorABackward.ChangeDutyCycle(Stop)
@@ -43,28 +44,28 @@ def stopMotors():
     pwmMotorBBackward.ChangeDutyCycle(Stop)
 
 
-def forward():
+def motorForward():
     pwmMotorAForward.ChangeDutyCycle(DutyCycleA)
     pwmMotorABackward.ChangeDutyCycle(Stop)
     pwmMotorBForward.ChangeDutyCycle(DutyCycleB)
     pwmMotorBBackward.ChangeDutyCycle(Stop)
 
 
-def backward():
+def motorBackward():
     pwmMotorAForward.ChangeDutyCycle(Stop)
     pwmMotorABackward.ChangeDutyCycle(DutyCycleA)
     pwmMotorBForward.ChangeDutyCycle(Stop)
     pwmMotorBBackward.ChangeDutyCycle(DutyCycleB)
 
 
-def turnRight():
+def turnLeft():
     pwmMotorAForward.ChangeDutyCycle(Stop)
     pwmMotorABackward.ChangeDutyCycle(DutyCycleA)
     pwmMotorBForward.ChangeDutyCycle(DutyCycleB)
     pwmMotorBBackward.ChangeDutyCycle(Stop)
 
 
-def turnLeft():
+def turnRight():
     pwmMotorAForward.ChangeDutyCycle(DutyCycleA)
     pwmMotorABackward.ChangeDutyCycle(Stop)
     pwmMotorBForward.ChangeDutyCycle(Stop)
