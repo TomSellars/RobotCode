@@ -1,5 +1,0 @@
-The robot's response to changing the object's position in the image frame should be fast.
-
-It would be good to mention what challenges one might face in solving this problem. For example, how will deal with the case when the object goes out of the camera view.  
-
-You might need a filter to smoothen out the noises in detecting the object's position (Try Kalman Filter).  Robot's response should be anticipatory in nature. 
